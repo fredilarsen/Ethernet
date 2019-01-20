@@ -127,6 +127,7 @@ class W5100Class {
 
 public:
   static uint8_t init(void);
+  static uint8_t reset(void);
 
   inline void setGatewayIp(const uint8_t * addr) { writeGAR(addr); }
   inline void getGatewayIp(uint8_t * addr) { readGAR(addr); }
@@ -298,6 +299,7 @@ public:
 private:
   static uint8_t chip;
   static uint8_t ss_pin;
+  static bool initialized;
   static uint8_t softReset(void);
   static uint8_t isW5100(void);
   static uint8_t isW5200(void);

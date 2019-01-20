@@ -78,9 +78,25 @@ int EthernetUDP::beginPacket(IPAddress ip, uint16_t port)
 	return Ethernet.socketStartUDP(sockindex, rawIPAddress(ip), port);
 }
 
+// Variable defined and set in socket.cpp
+extern uint8_t udp_send_error;
+
 int EthernetUDP::endPacket()
 {
-	return Ethernet.socketSendUDP(sockindex);
+	bool result = Ethernet.socketSendUDP(sockindex);
+	if (!result && udp_send_error) {
+		/* +2018.11 fil */
+		// Caught a known bug with the W5x00. While waiting for SEND_OK or TIMEOUT,
+		// a RECV was returned because something arrived while trying to send,
+		// and SEND_OK or TIMEOUT is never received.
+		// After this happens a very few times, the W5x00 is left inoperable.
+		// Try to compensate when this happens by closing, resetting and calling 
+		// begin again with the same port.
+		stop();
+		W5100.reset();
+		begin(_port);
+	}
+	return result;
 }
 
 size_t EthernetUDP::write(uint8_t byte)

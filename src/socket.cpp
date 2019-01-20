@@ -509,20 +509,43 @@ bool EthernetClass::socketStartUDP(uint8_t s, uint8_t* addr, uint16_t port)
 	return true;
 }
 
+/* +2018.11 fil: Make emergency exits from loop visible from elsewhere. */
+/* Just declare them ad-hoc to avoid changing the API (the existing functions) 
+   just to compensate for this problem with the lost SEND_OK */
+uint32_t socket_exit_count = 0;
+uint8_t udp_send_error = 0;
+
 bool EthernetClass::socketSendUDP(uint8_t s)
 {
+	udp_send_error = 0;
 	SPI.beginTransaction(SPI_ETHERNET_SETTINGS);
 	W5100.execCmdSn(s, Sock_SEND);
 
-	/* +2008.01 bj */
+	/* +2018.11 fil: introduced loop counter */
+	uint32_t count = 0;
+	uint8_t status = 0;
 	while ( (W5100.readSnIR(s) & SnIR::SEND_OK) != SnIR::SEND_OK ) {
-		if (W5100.readSnIR(s) & SnIR::TIMEOUT) {
+		count++;
+		status = W5100.readSnIR(s);
+		if (status & SnIR::TIMEOUT) {
 			/* +2008.01 [bj]: clear interrupt */
 			W5100.writeSnIR(s, (SnIR::SEND_OK|SnIR::TIMEOUT));
 			SPI.endTransaction();
-			//Serial.printf("sendUDP timeout\n");
 			return false;
 		}
+		/* +2018.11 fil */
+		/* Caught a known bug with the W5x00. While waiting for SEND_OK or TIMEOUT,
+		   a RECV was returned because something arrived while trying to send,
+		   and SEND_OK or TIMEOUT is never received and the loop would never exit. */
+		if (count > 100000) {
+			socket_exit_count++;
+			udp_send_error = 1;
+			//Serial.print("GOT STATUS "); Serial.println(status);			
+			W5100.writeSnIR(s, SnIR::SEND_OK);
+			SPI.endTransaction();
+			return false;
+		}
+		
 		SPI.endTransaction();
 		yield();
 		SPI.beginTransaction(SPI_ETHERNET_SETTINGS);
