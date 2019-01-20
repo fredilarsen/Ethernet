@@ -1,4 +1,4 @@
-= Fork of the Ethernet Library for Arduino =
+= Bugfix fork of the Ethernet Library for Arduino =
 
 This fork was created to fix a bug where W5x00 based Ethernet shields will in some cases force the Arduino to lock up permanently until both Arduino and network shield are rebooted.
 
