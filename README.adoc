@@ -1,24 +1,9 @@
-= Ethernet Library for Arduino =
+= Fork of the Ethernet Library for Arduino =
 
-With the Arduino Ethernet Shield, this library allows an Arduino board to connect to the internet.
+# Fix description
 
-For more information about this library please visit us at
-https://www.arduino.cc/en/Reference/Ethernet
+This fork was created to fix a bug where W5x00 based Ethernet shields will in some cases force the Arduino to lock up permanently until both Arduino and network shield are rebooted.
 
-== License ==
+The problem occurs while sending a UDP packet and an incoming packet arrives at about the same time. A loop in EthernetClass::socketSendUDP in socket.cpp will loop until SEND_OK or TIMEOUT is received, but this never happens so the loop will go on forever, locking up the Arduino. A code may be received, but this is typically RECV.
 
-Copyright (c) 2010 Arduino LLC. All right reserved.
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+Fixing that function to detect this condition and return failure was not enough. The card would become unresponsive after this happening a few times, neither sending or receiving. So the code in EthernetUdp.cpp and utility/w5100.h/cpp was modified to do a reset of the network shield, but keeping and putting back the current configuration so that the Arduino sketches will continue working without re-initializing Ethernet.
