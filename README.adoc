@@ -5,3 +5,7 @@ This fork was created to fix a bug where W5x00 based Ethernet shields will in so
 The problem occurs while sending a UDP packet and an incoming packet arrives at about the same time. A loop in EthernetClass::socketSendUDP in socket.cpp will loop until SEND_OK or TIMEOUT is received, but this never happens so the loop will go on forever, locking up the Arduino. A code may be received, but this is typically RECV.
 
 Fixing that function to detect this condition and return failure was not enough. The card would become unresponsive after this happening a few times, neither sending or receiving. So the code in EthernetUdp.cpp and utility/w5100.h/cpp was modified to do a reset of the network shield, but keeping and putting back the current configuration so that the Arduino sketches will continue working without re-initializing Ethernet.
+
+This problem was in normal setups quite rare -- systems could run for days or weeks before locking up, making it hard to trace. There is a sketch in the link below that can be used to reproduce the problem within minutes.
+
+The ticket in the Arduino Ethernet lib can be found here: https://github.com/arduino-libraries/Ethernet/issues/78
