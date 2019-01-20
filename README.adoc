@@ -1,7 +1,5 @@
 = Fork of the Ethernet Library for Arduino =
 
-# Fix description
-
 This fork was created to fix a bug where W5x00 based Ethernet shields will in some cases force the Arduino to lock up permanently until both Arduino and network shield are rebooted.
 
 The problem occurs while sending a UDP packet and an incoming packet arrives at about the same time. A loop in EthernetClass::socketSendUDP in socket.cpp will loop until SEND_OK or TIMEOUT is received, but this never happens so the loop will go on forever, locking up the Arduino. A code may be received, but this is typically RECV.
